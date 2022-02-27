@@ -1,0 +1,63 @@
+server:
+  port: 8080
+
+# 阿里云oss配置
+aliyun:
+  oss:
+    endpoint:
+    accessKeyId:
+    accessKeySecret:
+    bucketName:
+    # 访问静态资源的完整域名  尾部不能有 /
+    # 例如https://bucketName.oss-cn-beijing.aliyuncs.com
+    fullDomain:
+    # 启用Nginx反向代理来访问静态资源
+    useNginxProxy: true
+    # 使用代理访问静态资源的标志 尾部不能有 /
+    proxyDomain: /resource
+
+# 是否启动swagger
+swagger:
+  enable: false
+
+# mysql数据库配置
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 本地环境
+    url: jdbc:mysql://localhost:3306/my_blog?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 100MB
+  jackson:
+    time-zone: GMT+8
+    serialization:
+      # 时间类型默认返回时间戳
+      write-dates-as-timestamps: true
+  redis:
+    # 本地环境
+    host: 192.168.2.128
+    port: 6379
+    database: 0
+    password: 123456
+    # 连接超时时间
+    timeout: 5000
+    lettuce:
+      pool:
+        # 连接池最大连接数（使用负值表示没有限制）
+        max-active: 20
+        # 连接池最大阻塞等待时间（使用负值表示没有限制）
+        max-wait: 10000
+        # 连接池中的最大空闲连接
+        max-idle: 8
+        # 连接池中的最小空闲连接
+        min-idle: 2
+
+# mybatis-plus配置
+mybatis-plus:
+  # 配置mapper xml文件路径
+  mapper-locations: classpath:com/xjh/myblog/mapper/xml/*.xml
