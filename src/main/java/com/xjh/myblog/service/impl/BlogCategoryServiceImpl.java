@@ -2,7 +2,6 @@ package com.xjh.myblog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.xjh.myblog.annotation.TokenPermission;
 import com.xjh.myblog.entity.BlogCategory;
 import com.xjh.myblog.mapper.BlogCategoryMapper;
 import com.xjh.myblog.service.BlogCategoryService;

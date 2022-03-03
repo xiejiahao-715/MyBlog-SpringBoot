@@ -55,7 +55,7 @@ public class OssServiceImpl implements OssService {
                 .build(OssProperties.END_POINT, OssProperties.ACCESS_KEY_ID, OssProperties.ACCESS_KEY_SECRET);
         // 判断文件是否存在
         boolean found = ossClient.doesObjectExist(OssProperties.BUCKET_NAME,path);
-        if(!found) throw new MyException("下载博客(文件不存在)");
+        if(!found) throw new MyException("下载博客:文件不存在");
         OSSObject ossObject = ossClient.getObject(OssProperties.BUCKET_NAME, path);
 
         InputStream inputStream = null;
@@ -67,23 +67,34 @@ public class OssServiceImpl implements OssService {
             zipOutputStream.putNextEntry(new ZipEntry(filename + ".md"));
             // 从文档中解析需要用到的文件 将其在OSS中的路径存储下来 对于文本逐行解析
             HashSet<String> imageFilePaths = new HashSet<>();
-            // 匹配img标签中的src属性
-            String regex = String.format("(<img\\b.*?src=\")(%s|%s)/(.*?)(\".*?>)", OssProperties.FULL_DOMAIN,OssProperties.PROXY_DOMAIN);
-            Pattern pattern = Pattern.compile(regex);
+            // 匹配img标签中的src属性 例如<img src="/resource/test.jpg" /> 匹配出test.jpg
+            String imgTagRegex = String.format("(<img\\b.*?src=\")(%s|%s)/((.*?/)*(.*?))(\".*?>)", OssProperties.FULL_DOMAIN,OssProperties.PROXY_DOMAIN);
+            // 匹配markdown语法中的图片的路径 例如 ![test.jpg](/resource/test.jpg) 匹配出test.jpg
+            String imgMdRegex = String.format("(!\\[.*?\\])\\( *?(%s|%s)/((.*?/)*(.*?))\\)",OssProperties.FULL_DOMAIN,OssProperties.PROXY_DOMAIN);
+            Pattern imgTagPattern = Pattern.compile(imgTagRegex);
+            Pattern imgMdPattern = Pattern.compile(imgMdRegex);
             // 读取博客文件  并压缩
             while (true) {
                 String line = blogReader.readLine();
                 if (line == null) break;
-                Matcher matcher = pattern.matcher(line);
+                // 替换文档中<img>标签中src的值
+                Matcher matcher = imgTagPattern.matcher(line);
                 StringBuffer stringBuffer = new StringBuffer();
                 while (matcher.find()) {
-                    // 将匹配到的路径记录下来  路径格式为 blog/1/b64f69d38713447ab51cf99692afce04.png
-                    String fileOssPath = matcher.group(3).trim();
-                    String imageName = fileOssPath.replaceFirst("(.*/)?(.*)", "$2");
-                    matcher.appendReplacement(stringBuffer, matcher.group(1) + imageName + matcher.group(4));
-                    imageFilePaths.add(fileOssPath);
+                    matcher.appendReplacement(stringBuffer, matcher.group(1) + matcher.group(5) + matcher.group(6));
+                    imageFilePaths.add(matcher.group(3));
                 }
                 matcher.appendTail(stringBuffer);
+                // 替换 ![]() 结构中图片路径
+                line = stringBuffer.toString();
+                stringBuffer.delete(0,stringBuffer.length());
+                matcher = imgMdPattern.matcher(line);
+                while (matcher.find()){
+                    matcher.appendReplacement(stringBuffer,matcher.group(1) + "(" + matcher.group(5) + ")");
+                    imageFilePaths.add(matcher.group(3));
+                }
+                matcher.appendTail(stringBuffer);
+                // 到此图片解析完成，尾部加入换行符
                 stringBuffer.append('\n');
                 // 将解析的内容写入到压缩流
                 zipOutputStream.write(stringBuffer.toString().getBytes(StandardCharsets.UTF_8));
@@ -97,7 +108,7 @@ public class OssServiceImpl implements OssService {
             for(String imagePath :imageFilePaths){
                 OSSObject object = ossClient.getObject(OssProperties.BUCKET_NAME,imagePath);
                 inputStream = object.getObjectContent();
-                String imageName = imagePath.replaceFirst("(.*/)?(.*)", "$2");
+                String imageName = imagePath.replaceFirst("(.*?/)*(.*?)", "$2");
                 zipOutputStream.putNextEntry(new ZipEntry(imageName));
                 while ((n = inputStream.read(bytes)) != -1){
                     zipOutputStream.write(bytes,0,n);

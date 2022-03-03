@@ -3,16 +3,20 @@ package com.xjh.myblog.controller;
 import com.xjh.myblog.constant.IResult;
 import com.xjh.myblog.entity.Admin;
 import com.xjh.myblog.service.AdminService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+@Api(tags = "管理员登录相关接口")
 @CrossOrigin
 @RestController
-@RequestMapping("/blog-admin")
+@RequestMapping("/blogAdmin")
 public class LoginController {
     @Autowired
-    AdminService adminService;
+    private AdminService adminService;
 
+    @ApiOperation("登录接口")
     @PostMapping("/login")
     public IResult login(@RequestBody Admin adminVo){
         String token = adminService.login(adminVo);

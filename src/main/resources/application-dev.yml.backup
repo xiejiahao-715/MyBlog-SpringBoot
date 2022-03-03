@@ -1,6 +1,3 @@
-server:
-  port: 8080
-
 # 阿里云oss配置
 aliyun:
   oss:
@@ -9,16 +6,15 @@ aliyun:
     accessKeySecret:
     bucketName:
     # 访问静态资源的完整域名  尾部不能有 /
-    # 例如https://bucketName.oss-cn-beijing.aliyuncs.com
-    fullDomain:
+    fullDomain:              #  阿里云静态资源的外网域名
     # 启用Nginx反向代理来访问静态资源
     useNginxProxy: true
     # 使用代理访问静态资源的标志 尾部不能有 /
-    proxyDomain: /resource
+    proxyDomain: /resource  # 可以用/resource 代替阿里云的外网域名
 
 # 是否启动swagger
 swagger:
-  enable: false
+  enable: true
 
 # mysql数据库配置
 spring:
@@ -27,7 +23,7 @@ spring:
     # 本地环境
     url: jdbc:mysql://localhost:3306/my_blog?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=GMT%2B8
     username: root
-    password: 123456
+    password:
 
   servlet:
     multipart:
@@ -40,10 +36,10 @@ spring:
       write-dates-as-timestamps: true
   redis:
     # 本地环境
-    host: 192.168.2.128
+    host:
     port: 6379
     database: 0
-    password: 123456
+    password:
     # 连接超时时间
     timeout: 5000
     lettuce:
