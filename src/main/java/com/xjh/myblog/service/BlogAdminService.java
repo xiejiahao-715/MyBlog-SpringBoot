@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 // 管理博客的管理员接口，需要进行权限验证
 public interface BlogAdminService extends IService<Blog> {
     /**
-     * 用于创建一个博客，返回创建博客的id
+     * 用于创建一个博客，返回创建博客的id,此时博客状态为：临时保存
      * @param blogVo 前端传递的blogVo对象
      * @return 返回新博客的id
      */
@@ -71,10 +71,15 @@ public interface BlogAdminService extends IService<Blog> {
     Page<Blog> getBlogPageAllStatus(Long current, Long limit);
 
     /**
-     * 发布博客，修改博客的状态为 发布
+     * 发布博客，修改博客的状态：临时保存->发布
      * @param id 博客id
      * @return 是否发布成功
      */
     boolean publishBlog(Long id);
 
+    /**
+     * 取消博客的发布，修改博客的状态为：发布->临时保存
+     *
+     */
+    boolean cancelPublishBlog(Long id);
 }

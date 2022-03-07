@@ -1,6 +1,7 @@
 package com.xjh.myblog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xjh.myblog.constant.ENUM.BlogStatus;
@@ -133,12 +134,16 @@ public class BlogAdminServiceImpl extends ServiceImpl<BlogMapper, Blog> implemen
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public boolean uploadBlogContent(Long id, MultipartFile file) {
         // 判断该id是否存在
         Blog blog = this.getById(id);
         if(blog == null){
             throw new MyException("上传博客内容:博客id不存在");
+        }
+        // 如何博客已经发布则 修改最近更新时间
+        if(BlogStatus.PUBLISHED.getBlogStatus().equals(blog.getStatus())){
+            this.update(new UpdateWrapper<Blog>().set("update_time",new Date()).eq("id",id));
         }
         // 生成在OOS中的存储路径  将内容存储为.md格式
         String filePath = generateBlogContentOssPath(id,blog.getBlogId());
@@ -192,13 +197,34 @@ public class BlogAdminServiceImpl extends ServiceImpl<BlogMapper, Blog> implemen
         if(!ossService.isFileExist(blogPath)){
             throw new MyException("发布博客:博客内容为空");
         }
-        // 修改数据库
-        blog.setPublishTime(new Date());
+        // 修改数据库  只更新指定字段
+        blog = new Blog();
+        blog.setId(id);
+        Date date = new Date();
+        blog.setPublishTime(date);
+        blog.setUpdateTime(date);
         blog.setStatus(BlogStatus.PUBLISHED.getBlogStatus());
         if(this.updateById(blog)){
             return true;
         }else{
             throw new MyException("发布博客:未知异常");
         }
+    }
+
+    @Override
+    @Transactional
+    public boolean cancelPublishBlog(Long id) {
+        Blog blog = this.getById(id);
+        if(blog == null){
+            throw new MyException("取消发布的博客:博客id不存在");
+        }
+        if(!BlogStatus.PUBLISHED.getBlogStatus().equals(blog.getStatus())){
+            throw new MyException("取消发布的博客:该博客未发布");
+        }
+        blog = new Blog();
+        blog.setId(id);
+        blog.setStatus(BlogStatus.TEMP.getBlogStatus());
+
+        return this.updateById(blog);
     }
 }

@@ -1,9 +1,11 @@
 package com.xjh.myblog.controller;
 
+import com.xjh.myblog.annotation.TokenPermission;
 import com.xjh.myblog.constant.IResult;
 import com.xjh.myblog.constant.OssProperties;
 import com.xjh.myblog.entity.Social;
 import com.xjh.myblog.entity.WebsiteInfo;
+import com.xjh.myblog.entity.vo.WebsiteInfoVo;
 import com.xjh.myblog.service.SocialService;
 import com.xjh.myblog.service.WebsiteInfoService;
 import com.xjh.myblog.utils.StringUtil;
@@ -41,5 +43,13 @@ public class WebsiteInfoController {
     public IResult getSocials(){
         List<Social> socials = socialService.getSocials();
         return IResult.success().data("socials",socials);
+    }
+
+    @ApiOperation("修改网站信息")
+    @PostMapping("/website")
+    @TokenPermission
+    public IResult updateWebsiteInfoById(@RequestBody WebsiteInfoVo websiteInfoVo){
+        boolean isSuccess = websiteInfoService.updateWebsiteInfoById(websiteInfoVo);
+        return isSuccess ? IResult.success().message("修改网站信息成功") : IResult.error().message("修改网站信息失败");
     }
 }

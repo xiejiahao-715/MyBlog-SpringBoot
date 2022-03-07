@@ -2,9 +2,12 @@ package com.xjh.myblog.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xjh.myblog.entity.WebsiteInfo;
+import com.xjh.myblog.entity.vo.WebsiteInfoVo;
 import com.xjh.myblog.exceptionhandler.MyException;
 import com.xjh.myblog.mapper.WebsiteInfoMapper;
 import com.xjh.myblog.service.WebsiteInfoService;
+import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,5 +23,18 @@ public class WebsiteInfoServiceImpl extends ServiceImpl<WebsiteInfoMapper, Websi
             throw new MyException("网站id不存在");
         }
         return websiteInfo;
+    }
+
+    @Override
+    @CacheEvict(value = "websiteInfo",key = "#websiteInfoVo.getId()",condition = "#websiteInfoVo?.getId() != null")
+    @Transactional
+    public boolean updateWebsiteInfoById(WebsiteInfoVo websiteInfoVo) {
+        WebsiteInfo websiteInfo = new WebsiteInfo();
+        BeanUtils.copyProperties(websiteInfoVo,websiteInfo);
+        if(baseMapper.updateById(websiteInfo) == 1){
+            return true;
+        }else{
+            throw new MyException("修改网站信息:错误");
+        }
     }
 }

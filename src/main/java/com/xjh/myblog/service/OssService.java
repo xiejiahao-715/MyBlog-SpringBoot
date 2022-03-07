@@ -42,4 +42,11 @@ public interface OssService {
      * @return 是否存在
      */
     boolean isFileExist(String path);
+
+    /**
+     * 永久删除一个文件
+     * @param path 文件在OSS中的路径
+     * @return 是否删除成功
+     */
+    boolean deleteFile(String path);
 }

@@ -22,7 +22,11 @@ public class Blog {
     private String cover;
     // 所属分类的id
     private Long category;
+
     private Date publishTime;
+
+    private Date updateTime;
+
     private String summary;
     // 文章是否被置顶
     private Boolean isTop;

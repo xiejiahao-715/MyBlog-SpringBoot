@@ -1,6 +1,6 @@
-# 数据库名 my_blog
-# 此脚本只用于建立数据库表，不含数据
-create table admin
+create database if not exists my_blog;
+
+create table if not exists admin
 (
     uid      int auto_increment
         primary key,
@@ -11,7 +11,7 @@ create table admin
 )
     comment '管理员表';
 
-create table banner_image
+create table if not exists banner_image
 (
     id  int auto_increment
         primary key,
@@ -19,7 +19,7 @@ create table banner_image
 )
     comment '存储banner图片';
 
-create table blog
+create table if not exists blog
 (
     id            int auto_increment
         primary key,
@@ -40,7 +40,7 @@ create table blog
 )
     comment '所有博客';
 
-create table blog_category
+create table if not exists blog_category
 (
     id    int auto_increment
         primary key,
@@ -49,7 +49,7 @@ create table blog_category
 )
     comment '博客的分类';
 
-create table social
+create table if not exists social
 (
     id    int auto_increment
         primary key,
@@ -60,7 +60,7 @@ create table social
 )
     comment '社交信息';
 
-create table website_info
+create table if not exists website_info
 (
     id           int auto_increment
         primary key,
@@ -73,4 +73,5 @@ create table website_info
     created_time datetime    null
 )
     comment '网站信息';
+
 

@@ -124,4 +124,12 @@ public class BlogAdminController {
     public void getBlogContent(HttpServletResponse response, @RequestParam("id") Long blogId){
         blogAdminService.getBlogContent(blogId,response);
     }
+
+    @ApiOperation("取消博客发布")
+    @DeleteMapping("/cancelPublish")
+    @TokenPermission
+    public IResult cancelPublishBlog(@RequestParam("id") Long id){
+        return blogAdminService.cancelPublishBlog(id)
+                ? IResult.success().message("取消博客发布成功") : IResult.error().message("取消博客失败");
+    }
 }

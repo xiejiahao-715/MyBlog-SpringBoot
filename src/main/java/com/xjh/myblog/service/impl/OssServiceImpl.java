@@ -6,6 +6,7 @@ import com.aliyun.oss.model.*;
 import com.xjh.myblog.constant.OssProperties;
 import com.xjh.myblog.exceptionhandler.MyException;
 import com.xjh.myblog.service.OssService;
+import com.xjh.myblog.utils.UUIDUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,11 +22,16 @@ import java.util.zip.ZipOutputStream;
 
 @Service
 public class OssServiceImpl implements OssService {
+    // 创建OSSClient实例 记得调用shutdown()方法关闭连接
+    private OSS createOssClient(){
+        return new OSSClientBuilder()
+                .build(OssProperties.END_POINT, OssProperties.ACCESS_KEY_ID, OssProperties.ACCESS_KEY_SECRET);
+    }
+
     @Override
     public void downloadFile(HttpServletResponse response,String path,String filename,String suffix) {
         // 创建OSSClient实例。
-        OSS ossClient = new OSSClientBuilder()
-                .build(OssProperties.END_POINT, OssProperties.ACCESS_KEY_ID, OssProperties.ACCESS_KEY_SECRET);
+        OSS ossClient = createOssClient();
 
         // 判断文件是否存在
         boolean found = ossClient.doesObjectExist(OssProperties.BUCKET_NAME,path);
@@ -51,18 +57,26 @@ public class OssServiceImpl implements OssService {
     @Override
     public void downloadBlogZip(HttpServletResponse response, String path, String filename,String suffix) {
         // 创建OSSClient实例。
-        OSS ossClient = new OSSClientBuilder()
-                .build(OssProperties.END_POINT, OssProperties.ACCESS_KEY_ID, OssProperties.ACCESS_KEY_SECRET);
+        OSS ossClient = createOssClient();
         // 判断文件是否存在
         boolean found = ossClient.doesObjectExist(OssProperties.BUCKET_NAME,path);
         if(!found) throw new MyException("下载博客:文件不存在");
         OSSObject ossObject = ossClient.getObject(OssProperties.BUCKET_NAME, path);
-
+        // 生成一个临时的.zip文件来保存博客
+        File tempZipFile = null;
+        try {
+            tempZipFile = File.createTempFile(UUIDUtil.getUUID32(),".zip");
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new MyException("下载博客:服务器异常");
+        }
+        // 读取图片的流对象
         InputStream inputStream = null;
+        // 读取文件的流对象，将zip文件写入到response返回给前端
+        InputStream fileInputStream = null;
         try (BufferedReader blogReader = new BufferedReader(new InputStreamReader(ossObject.getObjectContent()));
-             ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream(), StandardCharsets.UTF_8)) {
-            response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename + suffix, "utf-8"));
-            response.setContentType("application/octet-stream");
+             ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(tempZipFile), StandardCharsets.UTF_8);
+             OutputStream outputStream = response.getOutputStream()) {
             // 开始压缩md文档
             zipOutputStream.putNextEntry(new ZipEntry(filename + ".md"));
             // 从文档中解析需要用到的文件 将其在OSS中的路径存储下来 对于文本逐行解析
@@ -116,25 +130,44 @@ public class OssServiceImpl implements OssService {
                 zipOutputStream.closeEntry();
                 inputStream.close();
             }
+            zipOutputStream.close();
+            // 临时zip文件生成完毕，实现文件下载功能
+            response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename + suffix, "utf-8"));
+            response.setContentType("application/octet-stream");
+            // 告知浏览器文件的大小
+            response.addHeader("Content-Length", "" + tempZipFile.length());
+            fileInputStream = new FileInputStream(tempZipFile);
+            while ((n = fileInputStream.read(bytes)) != -1){
+                outputStream.write(bytes,0,n);
+            }
+            fileInputStream.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             ossClient.shutdown();
-            if(inputStream!=null){
-                try {
+            try {
+                if(inputStream != null){
                     inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
+                if(fileInputStream != null){
+                    fileInputStream.close();
+                }
+            }catch (IOException e){
+                e.printStackTrace();
+            } finally {
+                // 当所有流关闭后删除临时文件
+                tempZipFile.delete();
             }
+
         }
     }
 
     @Override
     public boolean uploadFile(MultipartFile file, String path,ObjectMetadata metadata) {
         // 创建OSSClient实例。
-        OSS ossClient = new OSSClientBuilder()
-                .build(OssProperties.END_POINT, OssProperties.ACCESS_KEY_ID, OssProperties.ACCESS_KEY_SECRET);
+        OSS ossClient = createOssClient();
+
         InputStream inputStream = null;
         try {
             inputStream = file.getInputStream();
@@ -172,10 +205,29 @@ public class OssServiceImpl implements OssService {
     @Override
     public boolean isFileExist(String path) {
         // 创建OSSClient实例。
-        OSS ossClient = new OSSClientBuilder()
-                .build(OssProperties.END_POINT, OssProperties.ACCESS_KEY_ID, OssProperties.ACCESS_KEY_SECRET);
+        OSS ossClient = createOssClient();
         boolean isExist = ossClient.doesObjectExist(OssProperties.BUCKET_NAME,path);
         ossClient.shutdown();
         return isExist;
+    }
+
+    @Override
+    public boolean deleteFile(String path) {
+        OSS ossClient = null;
+        try {
+            // 创建OSSClient实例。
+            ossClient = createOssClient();
+            boolean found = ossClient.doesObjectExist(OssProperties.BUCKET_NAME,path);
+            if(!found) throw new MyException("删除文件:文件不存在");
+            ossClient.deleteObject(OssProperties.BUCKET_NAME,path);
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        } finally{
+            if(ossClient != null){
+                ossClient.shutdown();
+            }
+        }
+        return true;
     }
 }

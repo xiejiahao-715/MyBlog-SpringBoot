@@ -1,6 +1,5 @@
 package com.xjh.myblog.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xjh.myblog.constant.OssProperties;
 import com.xjh.myblog.entity.BannerImage;
@@ -9,6 +8,7 @@ import com.xjh.myblog.mapper.BannerImageMapper;
 import com.xjh.myblog.service.BannerImageService;
 import com.xjh.myblog.service.OssService;
 import com.xjh.myblog.utils.FileUtil;
+import com.xjh.myblog.utils.StringUtil;
 import com.xjh.myblog.utils.UUIDUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -54,15 +54,29 @@ public class BannerImageServiceImpl extends ServiceImpl<BannerImageMapper, Banne
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "banner",key = "'list'")
-    public List<String> getBannerImageList() {
-        List<BannerImage> bannerImages = this.list(new QueryWrapper<BannerImage>().select("src"));
-        return bannerImages.stream().map(BannerImage::getSrc).collect(Collectors.toList());
+    public List<BannerImage> getBannerImageList() {
+        return this.list().stream().filter(bannerImage -> {
+            if(StringUtil.notNull(bannerImage.getSrc())){
+                bannerImage.setSrc(OssProperties.RESOURCE_DOMAIN + "/" + bannerImage.getSrc());
+                return true;
+            }else{
+                return false;
+            }
+        }).collect(Collectors.toList());
     }
 
     @Override
     public String getRandomBannerImage() {
-        List<String> banners = bannerImageService.getBannerImageList();
+        List<BannerImage> banners = bannerImageService.getBannerImageList();
         int randomIndex = (int) (Math.random() * banners.size());
-        return OssProperties.RESOURCE_DOMAIN + "/"+ banners.get(randomIndex);
+        return banners.get(randomIndex).getSrc();
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "banner",key = "'list'")
+    public boolean deleteBannerImage(Long id) {
+        // 这里就不对OSS中的文件进行删除了
+        return this.removeById(id);
     }
 }
