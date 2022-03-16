@@ -3,3 +3,4 @@
 # 不上传重要的配置文件
 *-dev.yml
 *-prod.yml
+cert/

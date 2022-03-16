@@ -2,7 +2,6 @@ package com.xjh.myblog.constant;
 
 import com.xjh.myblog.constant.ENUM.IResultCode;
 import lombok.Data;
-import lombok.ToString;
 
 import java.util.HashMap;
 import java.util.Map;
