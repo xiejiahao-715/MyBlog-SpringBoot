@@ -14,6 +14,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @Api(tags = "网站基本信息相关接口")
@@ -48,7 +49,7 @@ public class WebsiteInfoController {
     @ApiOperation("修改网站信息")
     @PostMapping("/website")
     @TokenPermission
-    public IResult updateWebsiteInfoById(@RequestBody WebsiteInfoVo websiteInfoVo){
+    public IResult updateWebsiteInfoById(@Valid @RequestBody WebsiteInfoVo websiteInfoVo){
         boolean isSuccess = websiteInfoService.updateWebsiteInfoById(websiteInfoVo);
         return isSuccess ? IResult.success().message("修改网站信息成功") : IResult.error().message("修改网站信息失败");
     }

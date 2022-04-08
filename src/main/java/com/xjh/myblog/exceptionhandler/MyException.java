@@ -1,7 +1,7 @@
 package com.xjh.myblog.exceptionhandler;
 
 
-import com.xjh.myblog.constant.ENUM.IResultCode;
+import com.xjh.myblog.ENUM.IResultCode;
 import lombok.Getter;
 import lombok.Setter;
 

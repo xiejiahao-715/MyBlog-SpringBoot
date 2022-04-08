@@ -1,4 +1,4 @@
-package com.xjh.myblog.constant.ENUM;
+package com.xjh.myblog.ENUM;
 
 public enum BlogStatus {
     // 代表该博客是临时保存的

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.xjh.myblog.constant.ENUM.BlogStatus;
+import com.xjh.myblog.ENUM.BlogStatus;
 import com.xjh.myblog.constant.OssProperties;
 import com.xjh.myblog.entity.Blog;
 import com.xjh.myblog.entity.vo.BlogVo;
@@ -12,6 +12,7 @@ import com.xjh.myblog.exceptionhandler.MyException;
 import com.xjh.myblog.mapper.BlogMapper;
 import com.xjh.myblog.service.BlogAdminService;
 import com.xjh.myblog.service.BlogCategoryService;
+import com.xjh.myblog.service.BlogViewCountRedisService;
 import com.xjh.myblog.service.OssService;
 import com.xjh.myblog.utils.FileUtil;
 import com.xjh.myblog.utils.UUIDUtil;
@@ -35,14 +36,14 @@ public class BlogAdminServiceImpl extends ServiceImpl<BlogMapper, Blog> implemen
     private BlogCategoryService blogCategoryService;
 
     @Autowired
+    private BlogViewCountRedisService blogViewCountRedisService;
+
+    @Autowired
     private OssService ossService;
 
     @Override
     @Transactional
     public Long createBlog(BlogVo blogVo) {
-        if(blogVo.getTitle() == null){
-            throw new MyException("创建博客:博客标题不能为空");
-        }
         if(!blogCategoryService.isCategoryIdExist(blogVo.getCategory())){
             throw new MyException("创建博客:分类id不存在");
         }
@@ -176,8 +177,10 @@ public class BlogAdminServiceImpl extends ServiceImpl<BlogMapper, Blog> implemen
         // 执行查询
         Page<Blog> blogIPage = new Page<>(current,limit);
         this.page(blogIPage,wrapper);
-        // 修改封面图片路径
-        blogIPage.setRecords(generateBlogListCoverLink(blogIPage.getRecords()));
+        blogIPage.getRecords().forEach(blog -> {
+            generateBlogCoverLink(blog);
+            blogViewCountRedisService.setBlogViewCounts(blog);
+        });
         return blogIPage;
     }
 

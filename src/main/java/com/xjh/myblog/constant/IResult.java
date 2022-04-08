@@ -1,6 +1,6 @@
 package com.xjh.myblog.constant;
 
-import com.xjh.myblog.constant.ENUM.IResultCode;
+import com.xjh.myblog.ENUM.IResultCode;
 import lombok.Data;
 
 import java.util.HashMap;
@@ -28,6 +28,9 @@ public class IResult {
         result.success = false;
         result.code = IResultCode.ERROR.getCode();
         return result;
+    }
+    public static IResult build(){
+        return new IResult();
     }
     public IResult success(Boolean success){
         this.success = success;

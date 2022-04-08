@@ -8,6 +8,8 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 @Api(tags = "管理员登录相关接口")
 @CrossOrigin
 @RestController
@@ -18,7 +20,7 @@ public class LoginController {
 
     @ApiOperation("登录接口")
     @PostMapping("/login")
-    public IResult login(@RequestBody Admin adminVo){
+    public IResult login(@Valid @RequestBody Admin adminVo){
         String token = adminService.login(adminVo);
         return IResult.success().data("token",token);
     }

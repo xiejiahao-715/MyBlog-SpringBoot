@@ -3,6 +3,7 @@ package com.xjh.myblog.service.impl;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.*;
+import com.xjh.myblog.ENUM.IResultCode;
 import com.xjh.myblog.constant.OssProperties;
 import com.xjh.myblog.exceptionhandler.MyException;
 import com.xjh.myblog.service.OssService;
@@ -82,9 +83,9 @@ public class OssServiceImpl implements OssService {
             // 从文档中解析需要用到的文件 将其在OSS中的路径存储下来 对于文本逐行解析
             HashSet<String> imageFilePaths = new HashSet<>();
             // 匹配img标签中的src属性 例如<img src="/resource/test.jpg" /> 匹配出test.jpg
-            String imgTagRegex = String.format("(<img\\b.*?src=\")(%s|%s)/((.*?/)*(.*?))(\".*?>)", OssProperties.FULL_DOMAIN,OssProperties.PROXY_DOMAIN);
+            String imgTagRegex = String.format("(<img\\b.*?src=\")(%s|%s)/(([^\"]*?/)*(.*?))(\".*?>)", OssProperties.FULL_DOMAIN,OssProperties.PROXY_DOMAIN);
             // 匹配markdown语法中的图片的路径 例如 ![test.jpg](/resource/test.jpg) 匹配出test.jpg
-            String imgMdRegex = String.format("(!\\[.*?\\])\\( *?(%s|%s)/((.*?/)*(.*?))\\)",OssProperties.FULL_DOMAIN,OssProperties.PROXY_DOMAIN);
+            String imgMdRegex = String.format("(!\\[.*?\\])\\( *?(%s|%s)/(([^\\)]*?/)*(.*?))\\)",OssProperties.FULL_DOMAIN,OssProperties.PROXY_DOMAIN);
             Pattern imgTagPattern = Pattern.compile(imgTagRegex);
             Pattern imgMdPattern = Pattern.compile(imgMdRegex);
             // 读取博客文件  并压缩
@@ -144,6 +145,7 @@ public class OssServiceImpl implements OssService {
 
         } catch (IOException e) {
             e.printStackTrace();
+            throw new MyException(IResultCode.SYSTEM_ERROR.getCode(), "解析并生成博客zip文件失败,可能是代码错误");
         } finally {
             ossClient.shutdown();
             try {

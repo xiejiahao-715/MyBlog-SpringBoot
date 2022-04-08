@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,9 +28,7 @@ public class BlogAdminController {
     @ApiOperation("创建博客")
     @PostMapping("/create")
     @TokenPermission
-    public IResult createBlog(
-            @RequestBody BlogVo blogVo){
-        System.out.println(blogVo);
+    public IResult createBlog(@Valid @RequestBody BlogVo blogVo){
         Long id = blogAdminService.createBlog(blogVo);
         return IResult.success()
                 .message("创建博客成功")
@@ -39,8 +38,7 @@ public class BlogAdminController {
     @ApiOperation("获取博客基本信息")
     @GetMapping("/basicInfo")
     @TokenPermission
-    public IResult getBlogBasicInfoById(
-            @RequestParam("id") Long id){
+    public IResult getBlogBasicInfoById(@RequestParam("id") Long id){
         BlogVo blogVo = blogAdminService.getBlogBasicInfoById(id);
         return IResult.success()
                 .data("info",blogVo);
@@ -51,7 +49,7 @@ public class BlogAdminController {
     @TokenPermission
     public IResult updateBlogBasicInfo(
             @RequestParam("id")Long id,
-            @RequestBody BlogVo blogVo){
+            @Valid @RequestBody BlogVo blogVo){
         blogVo.setId(id);
         if(blogAdminService.updateBlogBasicInfo(blogVo)){
             return IResult.success();

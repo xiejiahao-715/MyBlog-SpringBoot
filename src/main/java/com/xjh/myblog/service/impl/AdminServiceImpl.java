@@ -16,17 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements AdminService {
 
     @Autowired
-    RedisTemplate<String,Object> redisTemplate;
+    private RedisTemplate<String,Object> redisTemplate;
 
     @Override
     @Transactional(readOnly = true)
     public String login(Admin admin) {
         String username = admin.getUsername();
-        if(username == null)
-            throw new MyException("账号为空");
         String password = admin.getPassword();
-        if(password == null)
-            throw new MyException("密码为空");
         Admin realAdmin = this.getOne(new QueryWrapper<Admin>().eq("username",username));
         if(realAdmin == null)
             throw new MyException("账户不存在");

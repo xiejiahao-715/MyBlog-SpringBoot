@@ -27,7 +27,6 @@ create table if not exists blog
     title         varchar(50)       not null comment '文章标题',
     cover         text              null comment '文章封面的路径',
     category      int               null comment '分类的ID',
-    publish_time  datetime          null comment '发布时间',
     summary       text              null comment '文章内容的概括',
     is_top        tinyint default 0 not null comment '是否被置顶',
     is_hot        tinyint default 0 not null comment '是否为热门文章',
@@ -35,6 +34,8 @@ create table if not exists blog
 ',
     comment_count bigint  default 0 not null comment '评论数',
     status        varchar(10)       null,
+    publish_time  datetime          null comment '发布时间',
+    update_time   datetime          null comment '博客的更新时间',
     constraint blog_blogId_uindex
         unique (blog_id)
 )

@@ -3,8 +3,11 @@ package com.xjh.myblog.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xjh.myblog.entity.Blog;
+import com.xjh.myblog.entity.pojo.BlogYearArchive;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.Map;
 
 // 获取博客信息的接口,不需要权限
 public interface BlogPublicService extends IService<Blog> {
@@ -38,4 +41,17 @@ public interface BlogPublicService extends IService<Blog> {
      * @param response 代表响应的response对象
      */
     void downloadBlogZip(Long id, HttpServletResponse response);
+
+    /**
+     * 获得文件的归档 按照 年-月-日 进行归档
+     * @return 返回的是一个利用两层Map组织成的树形结构，利用 年-月 找到xx年xx月下的博客，
+     * 且Map对象都是用的TreeMap来保证存储时都已经按照时间大小排序了，同理List<Blog>也排序好
+     */
+    Map<Integer,Map<Integer,List<Blog>>> getBlogArchiveTree();
+
+    /**
+     * 获取一个归档对象
+     * @return 把树形结构的归档对象转换为了列表结构
+     */
+    List<BlogYearArchive> getBlogArchiveList();
 }

@@ -3,12 +3,15 @@ package com.xjh.myblog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.xjh.myblog.constant.ENUM.BlogStatus;
+import com.xjh.myblog.ENUM.BlogStatus;
 import com.xjh.myblog.entity.Blog;
+import com.xjh.myblog.entity.pojo.BlogMonthArchive;
+import com.xjh.myblog.entity.pojo.BlogYearArchive;
 import com.xjh.myblog.exceptionhandler.MyException;
 import com.xjh.myblog.mapper.BlogMapper;
 import com.xjh.myblog.service.BlogCategoryService;
 import com.xjh.myblog.service.BlogPublicService;
+import com.xjh.myblog.service.BlogViewCountRedisService;
 import com.xjh.myblog.service.OssService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -16,6 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
+
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.xjh.myblog.service.impl.util.BlogServiceUtil.*;
 
@@ -28,6 +35,9 @@ public class BlogPublicServiceImpl extends ServiceImpl<BlogMapper, Blog> impleme
 
     @Autowired
     private OssService ossService;
+
+    @Autowired
+    private BlogViewCountRedisService blogViewCountRedisService;
 
     @Autowired
     @Lazy // 避免 this 调用 AOP失效
@@ -44,6 +54,8 @@ public class BlogPublicServiceImpl extends ServiceImpl<BlogMapper, Blog> impleme
         }
         // 处理图片封面路径
         generateBlogCoverLink(blog);
+        // 设置文章访问量
+        blogViewCountRedisService.setBlogViewCounts(blog);
         return blog;
     }
 
@@ -64,8 +76,13 @@ public class BlogPublicServiceImpl extends ServiceImpl<BlogMapper, Blog> impleme
         Page<Blog> blogIPage = new Page<>(current,limit);
         // 执行查询
         this.page(blogIPage,wrapper);
-        // 修改封面图片路径
-        blogIPage.setRecords(generateBlogListCoverLink(blogIPage.getRecords()));
+
+        blogIPage.getRecords().forEach(blog->{
+            // 修改封面图片路径
+            generateBlogCoverLink(blog);
+            // 设置访问量
+            blogViewCountRedisService.setBlogViewCounts(blog);
+        });
         return blogIPage;
     }
     @Override
@@ -98,5 +115,56 @@ public class BlogPublicServiceImpl extends ServiceImpl<BlogMapper, Blog> impleme
         String filename = blog.getTitle();
         String relativePath = generateBlogContentOssPath(id,blog.getBlogId());
         ossService.downloadBlogZip(response,relativePath,filename,".zip");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Integer, Map<Integer, List<Blog>>> getBlogArchiveTree() {
+        // 获取所有的博客列表
+        List<Blog> blogList = this.list(new QueryWrapper<Blog>().eq("status",BlogStatus.PUBLISHED));
+        // 便于获取日期的 年-月-日
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        // 利用stream流Api操作
+        return blogList.stream()
+                .collect(Collectors.groupingBy(
+                // 先按照 年 来分组
+                blog -> Integer.parseInt(simpleDateFormat.format(blog.getPublishTime()).split("-")[0]),
+                // 按照 年 的大小倒序
+                () -> new TreeMap<>((year1,year2)-> year2 - year1),
+                Collectors.groupingBy(
+                        // 继续 按照 月 来分组  嵌套分组
+                        blog-> Integer.parseInt(simpleDateFormat.format(blog.getPublishTime()).split("-")[1])
+                        // 按照 月的大小来降序
+                        ,() -> new TreeMap<>((month1,month2)-> month2 - month1),
+                        // 将搜集到 Blog列表利用TreeSet进行 排序
+                        Collectors.collectingAndThen(
+                                Collectors.toCollection(()->new TreeSet<>(Comparator.comparing(Blog::getPublishTime).reversed())),
+                                ArrayList::new
+                        )))
+        );
+    }
+
+    // 获取一个归档对象 由树形结构转换而来
+    @Override
+    public List<BlogYearArchive> getBlogArchiveList(){
+        // 首相获取 归档 的树形结构
+        Map<Integer, Map<Integer, List<Blog>>> archive = blogPublicService.getBlogArchiveTree();
+        // 将Map形式的树形结构转为List形式，也就是BlogArchiveVo对象
+        List<BlogYearArchive> archiveList = new ArrayList<>();
+        for(Map.Entry<Integer,Map<Integer, List<Blog>>> yearEntry : archive.entrySet()){
+            // 获取年份归档
+            BlogYearArchive yearArchive = new BlogYearArchive();
+            yearArchive.setYear(yearEntry.getKey());
+            for(Map.Entry<Integer, List<Blog>> monthEntry : yearEntry.getValue().entrySet()){
+                // 添加月份归档
+                BlogMonthArchive monthArchive = new BlogMonthArchive();
+                monthArchive.setMonth(monthEntry.getKey());
+                monthArchive.getBlogs().addAll(monthEntry.getValue());
+                yearArchive.getMonthArchives().add(monthArchive);
+            }
+            archiveList.add(yearArchive);
+        }
+        return archiveList;
     }
 }
