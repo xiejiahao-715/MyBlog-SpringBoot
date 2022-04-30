@@ -56,6 +56,6 @@ spring:
 # mybatis-plus配置
 mybatis-plus:
   # 配置mapper xml文件路径
-  mapper-locations: classpath:com/xjh/myblog/mapper/xml/*.xml
+  mapper-locations: classpath:com/xjh/myblog/app/mapper/xml/*.xml
 #  configuration:
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.xjh.myblog.app.mapper.BlogMapper">
+
+    <update id="updateBlogViewCountBatchById" parameterType="collection">
+        update blog
+        <set>
+            <trim prefix="view_count=case" suffix="end">
+                <foreach collection="blogList" item="blog" separator=" ">
+                    <if test="blog.id != null and blog.viewCount != null and blog.viewCount > 0">
+                        when id=#{blog.id} then view_count + #{blog.viewCount}
+                    </if>
+                </foreach>
+            </trim>
+        </set>
+        <where>
+            <foreach collection="blogList" item="blog" open="id in (" separator="," close=")">
+                <if test="blog.id != null and blog.viewCount != null and blog.viewCount > 0">
+                    #{blog.id}
+                </if>
+            </foreach>
+        </where>
+    </update>
+</mapper>
